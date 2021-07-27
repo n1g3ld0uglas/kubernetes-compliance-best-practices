@@ -1,4 +1,4 @@
-# kubernetes-compliance-best-practices
+# Kubernetes Compliance Best Practices
 
 By default, Kubernetes is severly insecure - all pods can freely talk amongst themselves.
 To prevent this, we will enforce a set of policies depending on regularly standards we need to adhere to.
@@ -117,7 +117,7 @@ spec:
       feed: ejr-vpn
 ```
 
-# Automically detect attempted Anonymization Attacks
+# Automically block those attempted Anonymization Attacks
 
 Tor Bulk Exit feed The Tor Bulk Exit feed lists available Tor exit nodes on the internet which are used by Tor network. The list continuously updated and maintained by the Tor project. An attacker using Tor network, is likely to use one of the bulk exit nodes to connect to your infrastructure. The network security teams can detect such activity with Tor bulk exit feed and investigate as required.
 
