@@ -38,3 +38,25 @@ We need to introduce a test application. Once introduced, we would preferably cr
 kubectl apply -f https://installer.calicocloud.io/rogue-demo.yaml
 ```
 
+Confirm all workloads have the zone-based firewall-zone labels assigned to the correct pods:
+
+```
+kubectl get pods -n storefront --show-labels
+```
+
+Demilitarized (DMZ) Zone:
+```
+kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/ZoneBasedArchitecture/dmz.yaml
+```
+
+Trusted Zone:
+```
+kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/ZoneBasedArchitecture/trusted.yaml
+```
+
+Restricted Zone:
+```
+kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/ZoneBasedArchitecture/restricted.yaml
+```
+
+# Introduce a test application
