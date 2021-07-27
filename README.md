@@ -59,4 +59,12 @@ Restricted Zone:
 kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/ZoneBasedArchitecture/restricted.yaml
 ```
 
-# Introduce a test application
+# Block Traffic from an Embargoed Region
+
+Users commonly ask how to block traffic some unwanted regions if this is part of an internal company standard or part of a broader security best practice:
+https://community.cisco.com/t5/network-security/block-all-russia-public-ip-addresses/td-p/2094303
+
+Here is a cool 3rd-party tool where you can put in a country and it can output the IP/CIDR range for network policies: 
+https://www.countryipblocks.net/country_selection.php
+
+Using this IP list generator, we were able to create the below Russia embargo list:
