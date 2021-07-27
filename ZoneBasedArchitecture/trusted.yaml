@@ -1,0 +1,37 @@
+apiVersion: projectcalico.org/v3
+kind: StagedNetworkPolicy
+metadata:
+  name: default.trusted
+  namespace: storefront
+spec:
+  tier: default
+  order: 10
+  selector: fw-zone == "trusted"
+  serviceAccountSelector: ''
+  ingress:
+    - action: Deny
+      source:
+        selector: fw-zone == "dmz"
+      destination: {}
+    - action: Deny
+      source:
+        selector: fw-zone == "trusted"
+      destination: {}
+    - action: Deny
+      source: {}
+      destination: {}
+  egress:
+    - action: Deny
+      source: {}
+      destination:
+        selector: fw-zone == "trusted"
+    - action: Deny
+      source: {}
+      destination:
+        selector: fw-zone == "restricted"
+    - action: Deny
+      source: {}
+      destination: {}
+  types:
+    - Ingress
+    - Egress
