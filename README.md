@@ -59,6 +59,60 @@ Restricted Zone:
 kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/ZoneBasedArchitecture/restricted.yaml
 ```
 
+# Create a Security Whitelist before the Security Blocklist
+
+Whitelist - order:200
+```
+apiVersion: projectcalico.org/v3
+kind: Tier
+metadata:
+  name: security-whitelist
+spec:
+  order: 200
+```
+Blocklist - order:300
+```
+apiVersion: projectcalico.org/v3
+kind: Tier
+metadata:
+  name: security-blocklist
+spec:
+  order: 300
+```
+
+# Whitelist traffic for Kube-DNS
+To avoid any interruptions caused by the blocklists, we should explictly allow traffic for kube-dns:
+https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
+
+```
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: security-whitelist.allow-kube-dns
+spec:
+  tier: security-whitelist
+  order: 2000
+  selector: all()
+  namespaceSelector: ''
+  serviceAccountSelector: ''
+  egress:
+    - action: Allow
+      protocol: UDP
+      source: {}
+      destination:
+        selector: k8s-app == "kube-dns"
+        ports:
+          - '53'
+    - action: Pass
+      source: {}
+      destination: {}
+  doNotTrack: false
+  applyOnForward: false
+  preDNAT: false
+  types:
+    - Egress
+```
+
 # Block Traffic from an Embargoed Region
 
 Users commonly ask how to block traffic some unwanted regions if this is part of an internal company standard or part of a broader security best practice:
@@ -125,9 +179,9 @@ Tor Bulk Exit feed The Tor Bulk Exit feed lists available Tor exit nodes on the 
 apiVersion: projectcalico.org/v3
 kind: StagedGlobalNetworkPolicy
 metadata:
-  name: default.anonymization-feed
+  name: security-blocklist.anonymization-feed
 spec:
-  tier: default
+  tier: security-blocklist
   order: 210
   selector: ''
   namespaceSelector: ''
