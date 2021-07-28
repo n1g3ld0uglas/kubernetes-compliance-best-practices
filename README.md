@@ -123,7 +123,7 @@ Tor Bulk Exit feed The Tor Bulk Exit feed lists available Tor exit nodes on the 
 
 ```
 apiVersion: projectcalico.org/v3
-kind: GlobalNetworkPolicy
+kind: StagedGlobalNetworkPolicy
 metadata:
   name: default.anonymization-feed
 spec:
