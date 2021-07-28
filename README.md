@@ -91,7 +91,7 @@ metadata:
   name: security-whitelist.allow-kube-dns
 spec:
   tier: security-whitelist
-  order: 2000
+  order: 150
   selector: all()
   namespaceSelector: ''
   serviceAccountSelector: ''
@@ -112,6 +112,57 @@ spec:
   types:
     - Egress
 ```
+
+# Create a PCI Whitelist policy
+The Payment Card Industry (PCI) Data Security Standard (DSS) is an information security compliance standard which requires merchants and other businesses to handle credit card information in a secure manner that helps reduce the likelihood that cardholders would have sensitive financial account information stolen. In our case, we will try to securely allow workloads that handle payment details to talk to workloads that remain compliant.
+
+```
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: security-whitelist.pci-whitelist
+spec:
+  tier: security-whitelist
+  order: 155
+  selector: ''
+  namespaceSelector: ''
+  serviceAccountSelector: PCI == "true"
+  ingress:
+    - action: Deny
+      source:
+        serviceAccounts:
+          names: []
+          selector: PCI != "true"
+      destination:
+        serviceAccounts:
+          names: []
+          selector: PCI == "true"
+  egress:
+    - action: Pass
+      source: {}
+      destination:
+        selector: k8s-app == "kube-dns"||has(dns.operator.openshift.io/daemonset-dns)
+    - action: Pass
+      source: {}
+      destination:
+        selector: type == "public"
+    - action: Deny
+      source:
+        serviceAccounts:
+          names: []
+          selector: PCI == "true"
+      destination:
+        serviceAccounts:
+          names: []
+          selector: PCI != "true"
+  doNotTrack: false
+  applyOnForward: false
+  preDNAT: false
+  types:
+    - Ingress
+    - Egress
+```
+
 
 # Block Traffic from an Embargoed Region
 
