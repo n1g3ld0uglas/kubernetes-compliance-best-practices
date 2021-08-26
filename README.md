@@ -263,6 +263,11 @@ Confirm all workloads have the zone-based firewall-zone labels assigned to the c
 kubectl get pods -n storefront --show-labels
 ```
 
+The dynamic `Service Graph` presents network flows from service level perspective. 
+Top level view shows how traffic flows between namespaces as well as external and internal endpoints.
+
+<img width="1415" alt="6" src="https://user-images.githubusercontent.com/82048393/124572860-e66b5880-de40-11eb-9665-8760968fbbdc.png">
+
 
 ## Demilitarized (DMZ) Zone:
 ```
@@ -304,7 +309,9 @@ spec:
 
 ## Move Zone-Based Policies to a new Tier
 
-According to PCI Controls number 1.1.1, 1.1.5 and 1.1.7, we need a formal process for approving and testing all network connections and changes to the rule sets. The best way to demonstrate this is by using Calico to record and review all policy changes that affect connectivity between covered components.
+According to PCI Controls number ```1.1.1, 1.1.5 and 1.1.7```, we need a formal process for approving and testing all network connections and changes to the rule sets. The best way to demonstrate this is by using Calico to record and review all policy changes that affect connectivity between covered components.
+
+<img width="1419" alt="4" src="https://user-images.githubusercontent.com/82048393/124572715-c50a6c80-de40-11eb-8d7d-6d24b4bee192.png">
 
 ## Whitelist traffic for Kube-DNS
 To avoid any interruptions caused by the blocklists, we should explictly allow traffic for kube-dns:
