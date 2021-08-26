@@ -17,7 +17,7 @@ kubectl patch felixconfiguration.p default -p '{"spec":{"dnsLogsFlushInterval":"
 kubectl patch felixconfiguration.p default -p '{"spec":{"flowLogsFileAggregationKindForAllowed":1}}'
 ```
 
-## Deploy our PCI Compliance Reports.
+# Deploy our PCI Compliance Reports.
 
 Calico provides `GlobalReport` resource to offer [Compliance reports](https://docs.tigera.io/compliance/compliance-reports/) capability. 
 There are several types of reports that you can configure:
@@ -27,7 +27,7 @@ There are several types of reports that you can configure:
 * Network access
 * Policy audit
 
-When using EKS cluster, you need to [enable and configure audit log collection](https://docs.tigera.io/compliance/compliance-reports/compliance-managed-cloud#enable-audit-logs-in-eks) on AWS side in order to get the data captured for the `policy-audit` reports.
+According to PCI control no. ```2.2 and 2.4```, we need to audit an Inventory of the systems and make sure they meet industry-accepted system-hardening standards. Calico provides a CIS benchmark report that evaluates your Kubernetes worker nodes against CIS (Center for Information Security) configuration hardening standards:
 
 ```
 apiVersion: projectcalico.org/v3
@@ -49,6 +49,8 @@ spec:
 ```
 kubectl apply -f https://raw.githubusercontent.com/tigera-solutions/tigera-eks-workshop/main/demo/40-compliance-reports/daily-cis-results.yaml
 ```
+
+When using EKS cluster, you need to [enable and configure audit log collection](https://docs.tigera.io/compliance/compliance-reports/compliance-managed-cloud#enable-audit-logs-in-eks) on AWS side in order to get the data captured for the `policy-audit` reports.
 
 ```
 ---
@@ -90,7 +92,7 @@ Compliance reports organize data in a CSV format which can be downloaded and mov
 
 <img width="1571" alt="compliance-report" src="https://user-images.githubusercontent.com/82048393/124574593-85dd1b00-de42-11eb-8f30-88892486e8b5.png">
 
-## Deploy Global Alerts
+# Deploy Global Alerts
 
 ```
 ---
@@ -226,7 +228,7 @@ kubectl apply -f https://raw.githubusercontent.com/tigera-solutions/tigera-eks-w
 
 According to PCI controls ```7.1 and 7.2```, we must restrict access to cardholder data by business need to know. The best way to do this would be to use zerotrust security features to implement a default-deny model (access to all data services should be specifically allowed; everything else should be denied)
 
-## Where do we start with Default-Deny?
+#### Where do we start with Default-Deny?
 Since we have yet to add any network policies, this would deny all existing traffic, so we need to explicitly allow wanted traffic before we would enforce a default-deny policy. As a result, we will use the Calico-specific policy resource - 'StagedGlobalNetworkPolicy'
 
 ```
@@ -331,7 +333,7 @@ kind: Tier
 metadata:
   name: security-whitelist
 spec:
-  order: 200
+  order: 350
 ```
 
 ```
@@ -340,7 +342,7 @@ kind: Tier
 metadata:
   name: security-blocklist
 spec:
-  order: 300
+  order: 450
 ```
 
 ## Move Zone-Based Policies to a new Tier
@@ -464,6 +466,8 @@ spec:
 
 ## Designing a policy to automatically block traffic to feodo-tracker feeds
 
+According to PCI Controls no. ```5.1, 5.2, 5.3, 5.4, 10.6 and 11.4```, we need to protect all systems against malware with Intrusion Detection Systems (IDS)/Intrusion Prevention Systems (IPS) and network monitoring. Regularly update antivirus software. Review logs for anomalous and suspicious activity
+
 ```
 apiVersion: projectcalico.org/v3
 kind: StagedGlobalNetworkPolicy
@@ -490,6 +494,8 @@ spec:
   types:
     - Egress
 ```    
+
+Similarly, PCI Controls no. ```6.5 and 6.6``` state that we must be able to Detect and prevent web attacks. We can easily identify signs of compromise through those feeds, but well-defined network policy ensures we are staying 100% compliance through zero-trust.
 
 ## Automatically Identify Potential Anonymization Attacks
 
@@ -615,7 +621,7 @@ spec:
 
 A Git-Hub ban-list is a simple fix that puts bad actors in a tizzy because how do you get around the list? You can't for very long when you have people looking and filing pull requests on your i.p. address immediately on Git Hub.
 
-## test-wireguard-connectivity
+## Wireguard Encryption
 
 
 #### Install process on AWS 
@@ -650,3 +656,288 @@ To test that it’s working you can use wireguard-tools:
 ```
 sudo wg show
 ```
+
+According to PCI controls ```1.3, 1.3.1, 1.3.2, 1.3.3, 1.3.4, 1.3.5, 1.3.7```, we also need to prohibit and/or manage access between internet and CDE. We can protect against forged source IP addresses with WireGuard.
+
+## Host-Based Network Policy
+
+Calico network policies not only can secure pod to pod communications but also can be applied to EKS hosts to protect host based services and ports. 
+For more details refer to [Protect Kubernetes nodes](https://docs.tigera.io/security/kubernetes-nodes) documentaiton.
+
+#### Inventory the systems (Cluster Node and External Nodes)
+
+I'm building this scenario around a generic 3 node cluster - master, worker and etcd node:
+
+
+![Screenshot 2021-06-17 at 14 17 46](https://user-images.githubusercontent.com/82048393/122404102-d74a6680-cf76-11eb-88a3-8ee1219280e9.png)
+
+
+#### Automatically register your nodes as Host Endpoints (HEPS). 
+To enable automatic host endpoints, edit the default KubeControllersConfiguration instance, and set spec.controllers.node.hostEndpoint.autoCreate to true:
+
+```
+kubectl patch kubecontrollersconfiguration default --patch='{"spec": {"controllers": {"node": {"hostEndpoint": {"autoCreate": "Enabled"}}}}}'
+```
+
+<img width="1560" alt="Screenshot 2021-06-17 at 14 14 55" src="https://user-images.githubusercontent.com/82048393/122403683-7753c000-cf76-11eb-9016-ac84ce09297c.png">
+
+to add the label kubernetes-host to all nodes and their host endpoints:
+
+```
+kubectl label nodes --all kubernetes-host=
+```
+
+![Screenshot 2021-06-17 at 14 20 09](https://user-images.githubusercontent.com/82048393/122404637-4de76400-cf77-11eb-81d2-f63bb46b2779.png)
+
+
+
+This tutorial assumes that you already have a tier called 'rancher-nodes' in Calico Cloud:
+
+```
+cat << EOF > rancher-nodes.yaml
+apiVersion: projectcalico.org/v3
+kind: Tier
+metadata:
+  name: rancher-nodes
+spec:
+  order: 250
+EOF  
+```
+
+```
+kubectl apply -f rancher-nodes.yaml
+```
+
+<img width="637" alt="Screenshot 2021-06-17 at 14 22 27" src="https://user-images.githubusercontent.com/82048393/122404854-7a9b7b80-cf77-11eb-96cf-55caf84d8353.png">
+
+
+# etcd-nodes
+
+Once the tier is created, build a policy for the ETCD nodes:
+
+
+```
+cat << EOF > etcd-nodes.yaml
+apiVersion: projectcalico.org/v3
+kind: StagedGlobalNetworkPolicy
+metadata:
+  name: rancher-nodes.etcd-nodes
+spec:
+  tier: rancher-nodes
+  order: 0
+  selector: has(kubernetes-host) && environment == 'etcd'
+  namespaceSelector: ''
+  serviceAccountSelector: ''
+  ingress:
+    - action: Allow
+      protocol: TCP
+      source: {}
+      destination:
+        ports:
+          - '2376'
+          - '2379'
+          - '2380'
+          - '9099'
+          - '10250'
+    - action: Allow
+      protocol: UDP
+      source: {}
+      destination:
+        ports:
+          - '8472'
+  egress:
+    - action: Allow
+      protocol: TCP
+      source: {}
+      destination:
+        ports:
+          - '443'
+          - '2379'
+          - '2380'
+          - '6443'
+          - '9099'
+    - action: Allow
+      protocol: UDP
+      source: {}
+      destination:
+        ports:
+          - '8472'
+  doNotTrack: false
+  applyOnForward: false
+  preDNAT: false
+  types:
+    - Ingress
+    - Egress
+EOF  
+```
+
+```
+kubectl apply -f etcd-nodes.yaml
+```
+
+<img width="637" alt="Screenshot 2021-06-17 at 14 23 41" src="https://user-images.githubusercontent.com/82048393/122405073-a74f9300-cf77-11eb-865a-8ac3ffcb077f.png">
+
+
+# Control-plane-nodes (Master Node)
+
+Now proceed to build a policy for the master nodes:
+
+
+```
+cat << EOF > control-plane-nodes.yaml
+apiVersion: projectcalico.org/v3
+kind: StagedGlobalNetworkPolicy
+metadata:
+  name: rancher-nodes.control-plane-nodes
+spec:
+  tier: rancher-nodes
+  order: 100
+  selector: has(kubernetes-host) && environment == 'master'
+  namespaceSelector: ''
+  serviceAccountSelector: ''
+  ingress:
+    - action: Allow
+      protocol: TCP
+      source: {}
+      destination:
+        ports:
+          - '80'
+          - '443'
+          - '2376'
+          - '6443'
+          - '9099'
+          - '10250'
+    - action: Allow
+      protocol: UDP
+      source: {}
+      destination:
+        ports:
+          - '8472'
+  egress:
+    - action: Allow
+      protocol: TCP
+      source: {}
+      destination:
+        ports:
+          - '443'
+          - '2379'
+          - '2380'
+          - '9099'
+          - '10250'
+          - '10254'
+    - action: Allow
+      protocol: UDP
+      source: {}
+      destination:
+        ports:
+          - '8472'
+  doNotTrack: false
+  applyOnForward: false
+  preDNAT: false
+  types:
+    - Ingress
+    - Egress
+EOF  
+```
+
+```
+kubectl apply -f control-plane-nodes.yaml
+```
+
+<img width="621" alt="Screenshot 2021-06-17 at 14 25 14" src="https://user-images.githubusercontent.com/82048393/122405314-da922200-cf77-11eb-8b74-a088b5ed16ad.png">
+
+
+# worker-nodes
+
+Finally, we can build a policy for the worker nodes:
+
+
+```
+cat << EOF > worker-nodes.yaml
+apiVersion: projectcalico.org/v3
+kind: StagedGlobalNetworkPolicy
+metadata:
+  name: rancher-nodes.worker-nodes
+spec:
+  tier: rancher-nodes
+  order: 200
+  selector: has(kubernetes-host) && environment == 'worker'
+  namespaceSelector: ''
+  serviceAccountSelector: ''
+  ingress:
+    - action: Allow
+      protocol: TCP
+      source: {}
+      destination:
+        ports:
+          - '22'
+          - '3389'
+          - '80'
+          - '443'
+          - '2376'
+          - '9099'
+          - '10250'
+          - '10254'
+    - action: Allow
+      protocol: UDP
+      source: {}
+      destination:
+        ports:
+          - '8472'
+  egress:
+    - action: Allow
+      protocol: TCP
+      source: {}
+      destination:
+        ports:
+          - '443'
+          - '6443'
+          - '9099'
+          - '10254'
+    - action: Allow
+      protocol: UDP
+      source: {}
+      destination:
+        ports:
+          - '8472'
+  doNotTrack: false
+  applyOnForward: false
+  preDNAT: false
+  types:
+    - Ingress
+    - Egress
+EOF  
+```
+
+```
+kubectl apply -f worker-nodes.yaml
+```
+
+<img width="615" alt="Screenshot 2021-06-17 at 14 26 22" src="https://user-images.githubusercontent.com/82048393/122405523-09a89380-cf78-11eb-8295-509a8ff953f2.png">
+
+# Download node policies into your own cluster
+```
+wget https://raw.githubusercontent.com/n1g3ld0uglas/calico-enterprise-eks-workshop/main/hostpolicies/etcd.yaml
+```
+```
+wget https://raw.githubusercontent.com/n1g3ld0uglas/calico-enterprise-eks-workshop/main/hostpolicies/master.yaml
+```
+```
+wget https://raw.githubusercontent.com/n1g3ld0uglas/calico-enterprise-eks-workshop/main/hostpolicies/worker.yaml
+```
+
+# Label based on node purpose
+
+To select a specific set of host endpoints (and their corresponding Kubernetes nodes), use a policy selector that selects a label unique to that set of host endpoints. For example, if we want to add the label environment=dev to nodes named node1 and node2:
+
+```
+kubectl label node ip-10-0-1-165 environment=master
+kubectl label node ip-10-0-1-167 environment=worker
+kubectl label node ip-10-0-1-227 environment=etcd
+```
+
+![Screenshot 2021-06-17 at 14 31 27](https://user-images.githubusercontent.com/82048393/122406788-06fa6e00-cf79-11eb-9bd9-4e5882e51e00.png)
+
+Once correctly labeled, you can see the policy applying to each host endpoint:
+
+<img width="1756" alt="Screenshot 2021-06-17 at 14 41 01" src="https://user-images.githubusercontent.com/82048393/122408405-45dcf380-cf7a-11eb-9d02-213994d950d5.png">
