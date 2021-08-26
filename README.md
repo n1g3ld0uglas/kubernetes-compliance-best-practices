@@ -234,11 +234,11 @@ spec:
 I've specified order '1000' to ensure this policy is evaluated after all other network policies within the 'default' tier of Calico Enterprise.
 We can observe the traffic that would have been denied via policy - however, this will have no effect on existing traffic until the policy is applied.
 
-## Introduce a test application
+# Introduce a test application
 
 We need to introduce a test application. Once introduced, we would preferably create a zone-based architecture for those workloads - only explicly allowing traffic that we trust within each zone: 
 ```
-kubectl apply -f https://installer.calicocloud.io/rogue-demo.yaml
+kubectl apply -f kubectl apply -f https://installer.calicocloud.io/storefront-demo.yaml
 ```
 
 Confirm all workloads have the zone-based firewall-zone labels assigned to the correct pods:
@@ -247,17 +247,18 @@ Confirm all workloads have the zone-based firewall-zone labels assigned to the c
 kubectl get pods -n storefront --show-labels
 ```
 
-Demilitarized (DMZ) Zone:
+
+## Demilitarized (DMZ) Zone:
 ```
 kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/ZoneBasedArchitecture/dmz.yaml
 ```
 
-Trusted Zone:
+## Trusted Zone:
 ```
 kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/ZoneBasedArchitecture/trusted.yaml
 ```
 
-Restricted Zone:
+## Restricted Zone:
 ```
 kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/ZoneBasedArchitecture/restricted.yaml
 ```
