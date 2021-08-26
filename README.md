@@ -263,6 +263,8 @@ kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compl
 kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/ZoneBasedArchitecture/restricted.yaml
 ```
 
+<img width="564" alt="Screenshot 2021-06-10 at 10 57 45" src="https://user-images.githubusercontent.com/82048393/121505461-c465ee00-c9da-11eb-804c-afb49814fd9f.png">
+
 ## Create a Security Whitelist before the Security Blocklist
 
 Whitelist - order:200
