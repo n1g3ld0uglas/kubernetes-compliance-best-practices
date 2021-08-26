@@ -447,7 +447,7 @@ Using this IP list generator, you could generate an arbitrary set of IP subnetwo
 
 ## Block Traffic from endpoints associated with malware
 
-With respect to PCI Controls 5.1, 5.2, 5.3, 5.4, 10.6 and 11.4, we need to update antivirus software and review relevent logs for anomalous and suspicious activity. If we were to use this same ```IPSet``` idea, we can create another Calico resource ```GlobalThreatFeed``` to automatically identify and block inbound or outbound connections to IP addresses associated with bad actors (ie: Malware C2 Servers).
+With respect to PCI Controls ```5.1, 5.2, 5.3, 5.4, 10.6 and 11.4```, we need to update antivirus software and review relevent logs for anomalous and suspicious activity. If we were to use this same ```IPSet``` idea, we can create another Calico resource ```GlobalThreatFeed``` to automatically identify and block inbound or outbound connections to IP addresses associated with bad actors (ie: Malware C2 Servers).
 
 ```
 apiVersion: projectcalico.org/v3
@@ -597,7 +597,7 @@ metadata:
   name: default.monero-feed
 spec:
   tier: default
-  order: 210
+  order: 230
   selector: ''
   namespaceSelector: ''
   serviceAccountSelector: ''
@@ -915,7 +915,7 @@ kubectl apply -f worker-nodes.yaml
 
 <img width="615" alt="Screenshot 2021-06-17 at 14 26 22" src="https://user-images.githubusercontent.com/82048393/122405523-09a89380-cf78-11eb-8295-509a8ff953f2.png">
 
-# Download node policies into your own cluster
+## Download node policies into your own cluster
 ```
 wget https://raw.githubusercontent.com/n1g3ld0uglas/calico-enterprise-eks-workshop/main/hostpolicies/etcd.yaml
 ```
@@ -926,7 +926,7 @@ wget https://raw.githubusercontent.com/n1g3ld0uglas/calico-enterprise-eks-worksh
 wget https://raw.githubusercontent.com/n1g3ld0uglas/calico-enterprise-eks-workshop/main/hostpolicies/worker.yaml
 ```
 
-# Label based on node purpose
+### Label based on node purpose
 
 To select a specific set of host endpoints (and their corresponding Kubernetes nodes), use a policy selector that selects a label unique to that set of host endpoints. For example, if we want to add the label environment=dev to nodes named node1 and node2:
 
@@ -941,3 +941,128 @@ kubectl label node ip-10-0-1-227 environment=etcd
 Once correctly labeled, you can see the policy applying to each host endpoint:
 
 <img width="1756" alt="Screenshot 2021-06-17 at 14 41 01" src="https://user-images.githubusercontent.com/82048393/122408405-45dcf380-cf7a-11eb-9d02-213994d950d5.png">
+
+## Kibana dashboards
+
+The `Kibana` components comes with Calico commercial offerings and provides you access to raw flow, audit, and dns logs, as well as ability to visualize the collected data in various dashboards.
+
+<img width="1625" alt="8" src="https://user-images.githubusercontent.com/82048393/124572903-eff4c080-de40-11eb-911d-9e244acbc400.png">
+
+According to PCI Controls no. ```5.1, 5.2, 5.3, 5.4, 10.6 and 11.4``` we must get insights into statistical and behavioral anomalies. The best way to do this is through Calico's flow logs. Some of the default dashboards you get access to are DNS Logs, Flow Logs, Audit Logs, Kuernetes API calls, L7 HTTP metrics, and others.
+
+
+## Auto-quarantine bad actors
+
+Introduce the rogue pod:
+
+```
+kubectl apply -f https://installer.calicocloud.io/rogue-demo.yaml -n storefront
+```
+
+Again, we look to PCI controls ```5.1, 5.2, 5.3, 5.4, 10.6 and 11.4```. We need to automatically quarantine compromised workloads. The below policy should automatically isolate rogue actors based on labels selection (and log the activity for forensics):
+
+```
+cat << EOF > quarantine.yaml
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: security-blocklist.quarantine
+spec:
+  tier: security-blocklist
+  order: 250
+  selector: quarantine == "true"
+  namespaceSelector: ''
+  serviceAccountSelector: ''
+  ingress:
+    - action: Log
+      source: {}
+      destination: {}
+    - action: Deny
+      source: {}
+      destination: {}
+  egress:
+    - action: Log
+      source: {}
+      destination: {}
+    - action: Deny
+      source: {}
+      destination: {}
+  doNotTrack: false
+  applyOnForward: false
+  preDNAT: false
+  types:
+    - Ingress
+    - Egress
+EOF
+```
+
+Calico pinpoints the source of malicious activity, uses machine learning to identify anomalies, creates a security moat around critical workloads, deploys honeypods to capture zero-day attacks, and automatically quarantines potentially malicious workloads to thwart an attack. It monitors inbound and outbound traffic (north-south) and east-west traffic that is traversing the cluster environment. Calico provides threat feed integration and custom alerts, and can be configured to trigger automatic remediation.
+
+
+## Anomaly Detection Jobs
+
+For the management or standalone cluster:
+```
+curl https://docs.tigera.io/manifests/threatdef/ad-jobs-deployment.yaml -O
+```
+
+For the managed cluster:
+```
+curl https://docs.tigera.io/manifests/threatdef/ad-jobs-deployment-managed.yaml -O
+```
+
+Since we are managing a standalone cluster, we insert your cluster name into the 'ad-jobs-deployment' YAML file:
+```
+sed -i 's/CLUSTER_NAME/tigera-internal-managed-10-0-1-118/g' ad-jobs-deployment.yaml
+```
+
+Confirm the changes were applied within the YAML file:
+```
+cat ad-jobs-deployment.yaml | grep tigera-internal-managed-10-0-1-118
+```
+
+For the management or standalone cluster, make this change:
+```
+kubectl apply -f ad-jobs-deployment.yaml
+```
+
+You can configure the jobs using the environment variables. 
+
+```
+env:
+ - name: AD_max_docs
+   value: "2000000"
+ - name: AD_train_interval_minutes
+   value: "20"
+ - name: AD_port_scan_threshold
+   value: "500"
+ - name: AD_DnsLatency_IsolationForest_n_estimators
+   value: "100"
+```
+
+You can use vi to make changes to your deployment manifest (the yaml file):
+
+```
+vi ad-jobs-deployment.yaml
+```
+
+For a list of jobs are their respective values, visit this Tigera doc:
+https://docs.tigera.io/threat/anomaly-detection/customizing
+
+The below anomaly detection jobs run indefinitely:
+```
+kubectl get pods -n tigera-intrusion-detection -l app=anomaly-detection
+```
+
+Use the pod logs to monitor the job execution and health.
+```
+kubectl logs <pod_name> -n tigera-intrusion-detection | grep INFO
+```
+
+You can see that the jobs go through training cycles. 
+The more cycles it runs, the more it can learn from your data.
+
+If the intrusion detection feature is not working, ensure the license is read (I'm currently not running a valid license):
+```
+kubectl logs intrusion-detection-controller-c544bb64f-rffq2 -n tigera-intrusion-detection | grep Error
+```
