@@ -224,9 +224,10 @@ kubectl apply -f https://raw.githubusercontent.com/tigera-solutions/tigera-eks-w
 
 # Create a Default-Deny
 
-The first thing we would do is enforce a default-deny.
-However, this would deny all existing traffic, so we need to explicitly allow wanted traffic before we would enforce a default-deny policy.
-As a result, we will use the Calico-specific policy object - 'StagedGlobalNetworkPolicy'
+According to PCI controls ```7.1 and 7.2```, we must restrict access to cardholder data by business need to know. The best way to do this would be to use zerotrust security features to implement a default-deny model (access to all data services should be specifically allowed; everything else should be denied)
+
+## Where do we start with Default-Deny?
+Since we have yet to add any network policies, this would deny all existing traffic, so we need to explicitly allow wanted traffic before we would enforce a default-deny policy. As a result, we will use the Calico-specific policy resource - 'StagedGlobalNetworkPolicy'
 
 ```
 apiVersion: projectcalico.org/v3
@@ -285,6 +286,8 @@ kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compl
 ```
 
 <img width="564" alt="Screenshot 2021-06-10 at 10 57 45" src="https://user-images.githubusercontent.com/82048393/121505461-c465ee00-c9da-11eb-804c-afb49814fd9f.png">
+
+Follow a zero trust security model and implement least-privilege access (all processes should only be able to access information necessary for their legitimate purpose - PCI Control no. ```7.1, 7.2```
 
 
 ## Adding the Google Boutique Application
