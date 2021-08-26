@@ -253,6 +253,59 @@ spec:
 I've specified order '3000' to ensure this policy is evaluated after all other network policies within the 'default' tier of Calico Enterprise.
 We can observe the traffic that would have been denied via policy - however, this will have no effect on existing traffic until the policy is applied.
 
+## Create a Security Whitelist before the Security Blocklist
+
+```
+apiVersion: projectcalico.org/v3
+kind: Tier
+metadata:
+  name: security-whitelist
+spec:
+  order: 350
+```
+
+```
+apiVersion: projectcalico.org/v3
+kind: Tier
+metadata:
+  name: security-blocklist
+spec:
+  order: 450
+```
+
+## Whitelist traffic for Kube-DNS
+To avoid any interruptions caused by the blocklists, we should explictly allow traffic for kube-dns:
+https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
+
+```
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: security-whitelist.allow-kube-dns
+spec:
+  tier: security-whitelist
+  order: 150
+  selector: all()
+  namespaceSelector: ''
+  serviceAccountSelector: ''
+  egress:
+    - action: Allow
+      protocol: UDP
+      source: {}
+      destination:
+        selector: k8s-app == "kube-dns"
+        ports:
+          - '53'
+    - action: Pass
+      source: {}
+      destination: {}
+  doNotTrack: false
+  applyOnForward: false
+  preDNAT: false
+  types:
+    - Egress
+```
+
 # Introduce a test application
 
 We need to introduce a test application. Once introduced, we would preferably create a zone-based architecture for those workloads - only explicly allowing traffic that we trust within each zone: 
@@ -324,26 +377,6 @@ kubectl delete -f https://raw.githubusercontent.com/tigera-solutions/tigera-eks-
 
 If you were to re-add these workloads it would retain an audit trail of all changes made to a policy (Create, Read, Update and Delete). According to PCI controls numbered ```10.1, 10.2, 10.3```, we need to implement and record audit trail for all access to system components. With respect to Calico, we must record all policy changes that impact connectivity to/from in-scope assets with Calico.
 
-## Create a Security Whitelist before the Security Blocklist
-
-Whitelist - order:200
-```
-apiVersion: projectcalico.org/v3
-kind: Tier
-metadata:
-  name: security-whitelist
-spec:
-  order: 350
-```
-
-```
-apiVersion: projectcalico.org/v3
-kind: Tier
-metadata:
-  name: security-blocklist
-spec:
-  order: 450
-```
 
 ## Move Zone-Based Policies to a new Tier
 
@@ -351,38 +384,6 @@ According to PCI Controls number ```1.1.1, 1.1.5 and 1.1.7```, we need a formal 
 
 <img width="1419" alt="4" src="https://user-images.githubusercontent.com/82048393/124572715-c50a6c80-de40-11eb-8d7d-6d24b4bee192.png">
 
-## Whitelist traffic for Kube-DNS
-To avoid any interruptions caused by the blocklists, we should explictly allow traffic for kube-dns:
-https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
-
-```
-apiVersion: projectcalico.org/v3
-kind: GlobalNetworkPolicy
-metadata:
-  name: security-whitelist.allow-kube-dns
-spec:
-  tier: security-whitelist
-  order: 150
-  selector: all()
-  namespaceSelector: ''
-  serviceAccountSelector: ''
-  egress:
-    - action: Allow
-      protocol: UDP
-      source: {}
-      destination:
-        selector: k8s-app == "kube-dns"
-        ports:
-          - '53'
-    - action: Pass
-      source: {}
-      destination: {}
-  doNotTrack: false
-  applyOnForward: false
-  preDNAT: false
-  types:
-    - Egress
-```
 
 # Create a PCI Whitelist policy
 The Payment Card Industry (PCI) Data Security Standard (DSS) is an information security compliance standard which requires merchants and other businesses to handle credit card information in a secure manner that helps reduce the likelihood that cardholders would have sensitive financial account information stolen. In our case, we will try to securely allow workloads that handle payment details to talk to workloads that remain compliant.
