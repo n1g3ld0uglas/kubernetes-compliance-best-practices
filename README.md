@@ -1,7 +1,13 @@
-# Kubernetes Compliance Best Practices
+# K8's PCI Compliance Workshop
 
 By default, Kubernetes is severly insecure - all pods can freely talk amongst themselves.
-To prevent this, we will enforce a set of policies depending on regularly standards we need to adhere to.
+To prevent this, we will enforce a set of policies to adhere to those PCI standards:
+
+## PCI Guide:
+https://www.pcisecuritystandards.org/pdfs/pci_ssc_quick_guide.pdf
+
+## Tigera PCI Whitepaper:
+https://info.tigera.io/rs/805-GFH-732/images/tigera-assets-whitepaper-pci.pdf?mkt_tok=ODA1LUdGSC03MzIAAAF-jOpvGPypqiupw7CjVDlhYAmYiqn5N0qCNzU-y2zGzkLuEMH1JDZM-BPoG9iQ1IgGHkDGxYFQdCVG3ICdqstmIPwqTSKIjwG3ZyjJmkHE5w
 
 # Create a Default-Deny
 
