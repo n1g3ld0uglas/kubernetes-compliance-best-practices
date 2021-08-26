@@ -84,12 +84,11 @@ spec:
 kubectl apply -f https://raw.githubusercontent.com/tigera-solutions/tigera-eks-workshop/main/demo/40-compliance-reports/cluster-reports.yaml
 ```
 
+A compliance report could be configured to include only specific endpoints leveraging endpoint labels and selectors. Each report has the `schedule` field that determines how often the report is going to be generated and sets the timeframe for the data to be included into the report.
 
-    A compliance report could be configured to include only specific endpoints leveraging endpoint labels and selectors. Each report has the `schedule` field that determines how often the report is going to be generated and sets the timeframe for the data to be included into the report.
+Compliance reports organize data in a CSV format which can be downloaded and moved to a long term data storage to meet compliance requirements.
 
-    Compliance reports organize data in a CSV format which can be downloaded and moved to a long term data storage to meet compliance requirements.
-
-    <img width="1571" alt="compliance-report" src="https://user-images.githubusercontent.com/82048393/124574593-85dd1b00-de42-11eb-8f30-88892486e8b5.png">
+<img width="1571" alt="compliance-report" src="https://user-images.githubusercontent.com/82048393/124574593-85dd1b00-de42-11eb-8f30-88892486e8b5.png">
 
 ## Deploy Global Alerts
 
@@ -236,7 +235,7 @@ metadata:
   name: default.catch-all-default-deny
 spec:
   tier: default
-  order: 1000
+  order: 3000
   selector: ''
   namespaceSelector: ''
   serviceAccountSelector: ''
@@ -248,7 +247,7 @@ spec:
     - Egress
 ```
 
-I've specified order '1000' to ensure this policy is evaluated after all other network policies within the 'default' tier of Calico Enterprise.
+I've specified order '3000' to ensure this policy is evaluated after all other network policies within the 'default' tier of Calico Enterprise.
 We can observe the traffic that would have been denied via policy - however, this will have no effect on existing traffic until the policy is applied.
 
 # Introduce a test application
@@ -293,7 +292,7 @@ metadata:
 spec:
   order: 200
 ```
-Blocklist - order:300
+
 ```
 apiVersion: projectcalico.org/v3
 kind: Tier
@@ -302,6 +301,10 @@ metadata:
 spec:
   order: 300
 ```
+
+## Move Zone-Based Policies to a new Tier
+
+According to PCI Controls number 1.1.1, 1.1.5 and 1.1.7, we need a formal process for approving and testing all network connections and changes to the rule sets. The best way to demonstrate this is by using Calico to record and review all policy changes that affect connectivity between covered components.
 
 ## Whitelist traffic for Kube-DNS
 To avoid any interruptions caused by the blocklists, we should explictly allow traffic for kube-dns:
