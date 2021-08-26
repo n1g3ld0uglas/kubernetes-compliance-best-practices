@@ -482,7 +482,7 @@ spec:
       feed: ejr-vpn
 ```
 
-# Automically block those attempted Anonymization Attacks
+## Automically block those attempted Anonymization Attacks
 
 Tor Bulk Exit feed The Tor Bulk Exit feed lists available Tor exit nodes on the internet which are used by Tor network. The list continuously updated and maintained by the Tor project. An attacker using Tor network, is likely to use one of the bulk exit nodes to connect to your infrastructure. The network security teams can detect such activity with Tor bulk exit feed and investigate as required.
 
@@ -517,7 +517,7 @@ spec:
 
 EJR VPN feed In recent times it became a trend to use multiple anonymization networks to hide real attacker identity. The EJR VPN feed targets major VPN providers and their infrastructure used in anonymization activity over the internet. The feed is updated bi-monthly, which helps network security teams to stay on top of threats from such anonymizing infrastructure and detect them early in the enumeration phase.
 
-# Protect against Monero attacks
+## Protect against Monero attacks
 
 The Christmas Day attack against Monero full nodes was largely mitigated by the ban-list of bad i.p.'s at https://gui.xmr.pm/files/block_tor.txt . Knowledgeable full node owners saw their nodes down, instituted the ban-list and were back up and running immediately.
 
@@ -571,3 +571,39 @@ spec:
 ```
 
 A Git-Hub ban-list is a simple fix that puts bad actors in a tizzy because how do you get around the list? You can't for very long when you have people looking and filing pull requests on your i.p. address immediately on Git Hub.
+
+## test-wireguard-connectivity
+
+
+#### Install process on AWS 
+
+For my cluster, I'll be using Ubuntu, and therefore will follow a unique install process for Wireguard on each of your Ubuntu nodes:
+```
+sudo apt install wireguard
+```
+
+If using AKS or OpenShift clusters, do follow the official install process documented in the Tigera docs:
+```
+https://docs.tigera.io/compliance/encrypt-cluster-pod-traffic
+```
+
+If installing on a node Ubuntu OS, do check out Wireguard's documentation for individual OS Support:
+```
+https://www.wireguard.com/install/
+```
+
+#### Confirming Wireguard encryption is enabled on our nodes
+Enable WireGuard encryption across all the nodes using the following command:
+```
+kubectl patch felixconfiguration default --type='merge' -p '{"spec":{"wireguardEnabled":true}}'
+```
+
+Verify that the nodes are configured for WireGuard encryption:
+```
+kubectl get node ip-10-0-1-157 -o yaml
+```
+
+To test that it’s working you can use wireguard-tools:
+```
+sudo wg show
+```
