@@ -19,14 +19,15 @@ kubectl patch felixconfiguration.p default -p '{"spec":{"flowLogsFileAggregation
 
 ## Deploy our PCI Compliance Reports.
 
-Calico provides `GlobalReport` resource to offer [Compliance reports](https://docs.tigera.io/compliance/compliance-reports/) capability. There are several types of reports that you can configure:
+Calico provides `GlobalReport` resource to offer [Compliance reports](https://docs.tigera.io/compliance/compliance-reports/) capability. 
+There are several types of reports that you can configure:
 
-    - CIS benchmarks
-    - Inventory
-    - Network access
-    - Policy audit
+*CIS benchmarks
+*Inventory
+*Network access
+*Policy audit
 
-    >When using EKS cluster, you need to [enable and configure audit log collection](https://docs.tigera.io/compliance/compliance-reports/compliance-managed-cloud#enable-audit-logs-in-eks) on AWS side in order to get the data captured for the `policy-audit` reports.
+When using EKS cluster, you need to [enable and configure audit log collection](https://docs.tigera.io/compliance/compliance-reports/compliance-managed-cloud#enable-audit-logs-in-eks) on AWS side in order to get the data captured for the `policy-audit` reports.
 
 ```
 apiVersion: projectcalico.org/v3
