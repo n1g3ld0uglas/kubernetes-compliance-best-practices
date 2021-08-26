@@ -37,7 +37,7 @@ spec:
 I've specified order '1000' to ensure this policy is evaluated after all other network policies within the 'default' tier of Calico Enterprise.
 We can observe the traffic that would have been denied via policy - however, this will have no effect on existing traffic until the policy is applied.
 
-# Introduce a test application
+## Introduce a test application
 
 We need to introduce a test application. Once introduced, we would preferably create a zone-based architecture for those workloads - only explicly allowing traffic that we trust within each zone: 
 ```
@@ -65,7 +65,7 @@ Restricted Zone:
 kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/ZoneBasedArchitecture/restricted.yaml
 ```
 
-# Create a Security Whitelist before the Security Blocklist
+## Create a Security Whitelist before the Security Blocklist
 
 Whitelist - order:200
 ```
@@ -86,7 +86,7 @@ spec:
   order: 300
 ```
 
-# Whitelist traffic for Kube-DNS
+## Whitelist traffic for Kube-DNS
 To avoid any interruptions caused by the blocklists, we should explictly allow traffic for kube-dns:
 https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
 
@@ -170,7 +170,7 @@ spec:
 ```
 
 
-# Block Traffic from an Embargoed Region
+## Block Traffic from an Embargoed Region
 
 Users commonly ask how to block traffic some unwanted regions if this is part of an internal company standard or part of a broader security best practice:
 https://community.cisco.com/t5/network-security/block-all-russia-public-ip-addresses/td-p/2094303
@@ -178,23 +178,57 @@ https://community.cisco.com/t5/network-security/block-all-russia-public-ip-addre
 Here is a cool 3rd-party tool where you can put in a country and it can output the IP/CIDR range for network policies: 
 https://www.countryipblocks.net/country_selection.php
 
-Using this IP list generator, we were able to create the below Russia embargo list:
+Using this IP list generator, you could generate an arbitrary set of IP subnetworks/CIDRs - which we can assign to a Calico-specific resource called a ```GlobalNetworkSet```. This allows admins to match potentially unwanted traffic to our Calico policies.
+
+## Block Traffic from endpoints associated with malware
+
+With respect to PCI Controls 5.1, 5.2, 5.3, 5.4, 10.6 and 11.4, we need to update antivirus software and review relevent logs for anomalous and suspicious activity. If we were to use this same ```IPSet``` idea, we can create another Calico resource ```GlobalThreatFeed``` to automatically identify and block inbound or outbound connections to IP addresses associated with bad actors (ie: Malware C2 Servers).
 
 ```
 apiVersion: projectcalico.org/v3
 kind: GlobalThreatFeed
 metadata:
-  name: russia-embargo
+  name: feodo-tracker
 spec:
+  content: IPSet
   pull:
     http:
-      url: https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/acl/russia-cidr.txt
+      url: https://feodotracker.abuse.ch/downloads/ipblocklist.txt
   globalNetworkSet:
     labels:
-      feed: russia-cidr
+      threat-feed: feodo
 ```
 
-# Automatically Identify Potential Anonymization Attacks
+## Designing a policy to automatically block traffic to feodo-tracker feeds
+
+```
+apiVersion: projectcalico.org/v3
+kind: StagedGlobalNetworkPolicy
+metadata:
+  name: security.block-feodo
+spec:
+  tier: security
+  order: 210
+  selector: projectcalico.org/namespace != "acme"
+  namespaceSelector: ''
+  serviceAccountSelector: ''
+  egress:
+    - action: Deny
+      source: {}
+      destination:
+        selector: threatfeed == "feodo"
+    - action: Log
+      source: {}
+      destination:
+        selector: threatfeed == "feodo"
+  doNotTrack: false
+  applyOnForward: false
+  preDNAT: false
+  types:
+    - Egress
+```    
+
+## Automatically Identify Potential Anonymization Attacks
 
 Tor and VPN infrastructure are used in enabling anonymous communication, where an attacker can leverage anonymity to scan, attack or compromise the target. It’s hard for network security teams to track malicious actors using such anonymization tools. Hence Tor and VPN feeds come into play where the feeds track all the Tor bulk exit nodes as well as most of the anonymising VPN infrastructure on the internet.
 
