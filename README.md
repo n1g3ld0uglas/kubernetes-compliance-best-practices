@@ -961,10 +961,11 @@ According to PCI Controls no. ```5.1, 5.2, 5.3, 5.4, 10.6 and 11.4``` we must ge
 
 ## Auto-quarantine bad actors
 
-Introduce the rogue pod:
+Introduce the rogue pod into a brand-new namespace called ```attacker-namespace```
+<br/> We should be able to see PCI enforcement in action with this real-world threat:
 
 ```
-kubectl apply -f https://installer.calicocloud.io/rogue-demo.yaml -n storefront
+kubectl apply -f https://installer.calicocloud.io/rogue-demo.yaml -n attacker-namespace
 ```
 
 Again, we look to PCI controls ```5.1, 5.2, 5.3, 5.4, 10.6 and 11.4```. We need to automatically quarantine compromised workloads. The below policy should automatically isolate rogue actors based on labels selection (and log the activity for forensics):
