@@ -66,10 +66,13 @@ spec:
 apiVersion: projectcalico.org/v3
 kind: GlobalReport
 metadata:
-  name: cluster-network-access
+  name: hourly-accounts-networkaccess
 spec:
   reportType: network-access
-  schedule: '*/30 * * * *'
+  endpoints:
+    namespaces:
+      names: ["storefront", "default", "attacker-namespace"]
+  schedule: 0 * * * *
 
 # uncomment policy-audit report if you configured audit logs for EKS cluster https://docs.tigera.io/compliance/compliance-reports/compliance-managed-cloud#enable-audit-logs-in-eks
 # ---
@@ -81,6 +84,10 @@ spec:
 #   reportType: policy-audit
 #   schedule: '*/30 * * * *'
 ```
+
+The above report schedules hourly network-access reports for the accounts department endpoints. <br/>
+In our case, this is specified using the namespace names: ```storefront```, ```default``` and ```attacker-namespace```.
+
 
 ```
 kubectl apply -f https://raw.githubusercontent.com/tigera-solutions/tigera-eks-workshop/main/demo/40-compliance-reports/cluster-reports.yaml
