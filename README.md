@@ -177,7 +177,7 @@ spec:
 ```
 
 ```
-kubectl apply -f 
+kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/dns-access.yaml
 ```
 
 ```
