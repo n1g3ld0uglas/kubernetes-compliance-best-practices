@@ -317,7 +317,7 @@ spec:
 
 We need to introduce a test application. Once introduced, we would preferably create a zone-based architecture for those workloads - only explicly allowing traffic that we trust within each zone: 
 ```
-kubectl apply -f kubectl apply -f https://installer.calicocloud.io/storefront-demo.yaml
+kubectl apply -f https://installer.calicocloud.io/storefront-demo.yaml
 ```
 
 Confirm all workloads have the zone-based firewall-zone labels assigned to the correct pods:
@@ -325,6 +325,17 @@ Confirm all workloads have the zone-based firewall-zone labels assigned to the c
 ```
 kubectl get pods -n storefront --show-labels
 ```
+
+Remember to label to the ```backend``` pod with some extra context for PCI protection:
+
+```
+kubectl label pod backend-745777bb7b-xr5sb -n storefront security=strict
+```
+
+We will create an alert definition to notify and potentially mitigate unwanted connections to these ```strict``` workloads.
+
+<br/>
+<br/>
 
 The dynamic `Service Graph` presents network flows from service level perspective. 
 Top level view shows how traffic flows between namespaces as well as external and internal endpoints.
