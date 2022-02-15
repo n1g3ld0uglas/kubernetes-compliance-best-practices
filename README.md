@@ -640,25 +640,147 @@ spec:
 
 A Git-Hub ban-list is a simple fix that puts bad actors in a tizzy because how do you get around the list? You can't for very long when you have people looking and filing pull requests on your i.p. address immediately on Git Hub.
 
-## Wireguard Encryption
+## Wireguard In-Transit Encryption:
 
-
-#### Install process on AWS 
-
-For my cluster, I'll be using Ubuntu, and therefore will follow a unique install process for Wireguard on each of your Ubuntu nodes:
+Since AKS clusters already come with WireGuard installed on the host operating system, you simply need to enable to feature</br>
+https://www.tigera.io/blog/introducing-wireguard-encryption-with-calico/
 ```
-sudo apt install wireguard
+kubectl patch felixconfiguration default --type='merge' -p '{"spec":{"wireguardEnabled":true}}'
 ```
 
-If using AKS or OpenShift clusters, do follow the official install process documented in the Tigera docs:
+To verify that the nodes are configured for WireGuard encryption:
 ```
-https://docs.tigera.io/compliance/encrypt-cluster-pod-traffic
+kubectl get node ip-192-168-30-158.eu-west-1.compute.internal -o yaml | grep Wireguard
+```
+<img width="907" alt="Screenshot 2022-01-26 at 10 56 50" src="https://user-images.githubusercontent.com/82048393/151151803-42f7b589-909a-4213-a905-7e9965ec508c.png">
+
+
+Show how this has applied to traffic in-transit:
+```
+sudo wg show
 ```
 
-If installing on a node Ubuntu OS, do check out Wireguard's documentation for individual OS Support:
+
+#### Enable WireGuard statistics:
+
+To access wireguard statistics, prometheus stats in Felix configuration should be turned on. <br/>
+A quick way to do this is to enable nodeMetricsPort by apply the below manifest:
+
 ```
-https://www.wireguard.com/install/
+kubectl patch installation.operator.tigera.io default --type merge -p '{"spec":{"nodeMetricsPort":9091}}'
 ```
+
+Apply the following ```Service```, ```ServiceMonitor``` and ```NetworkPolicy``` manifests:
+
+```
+cat <<EOF | kubectl apply -f -
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calico-prometheus-metrics
+  namespace: calico-system
+  labels:
+    k8s-app: calico-node
+spec:
+  ports:
+  - name: calico-prometheus-metrics-port
+    port: 9091
+    protocol: TCP
+  selector:
+    k8s-app: calico-node
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  generation: 1
+  labels:
+    team: network-operators
+  name: calico-node-monitor-additional
+  namespace: tigera-prometheus
+spec:
+  endpoints:
+  - bearerTokenSecret:
+      key: ""
+    honorLabels: true
+    interval: 5s
+    port: calico-prometheus-metrics-port
+    scrapeTimeout: 5s
+  namespaceSelector:
+    matchNames:
+    - calico-system
+  selector:
+    matchLabels:
+      k8s-app: calico-node
+---
+apiVersion: crd.projectcalico.org/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    projectcalico.org/tier: allow-tigera
+  name: allow-tigera.prometheus-calico-node-prometheus-metrics-egress
+  namespace: tigera-prometheus
+spec:
+  egress:
+  - action: Allow
+    destination:
+      ports:
+      - 9091
+    protocol: TCP
+    source: {}
+  selector: app == 'prometheus' && prometheus == 'calico-node-prometheus'
+  tier: allow-tigera
+  types:
+  - Egress
+---
+apiVersion: crd.projectcalico.org/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    projectcalico.org/tier: allow-tigera
+  name: allow-tigera.calico-node-prometheus-metrics-ingress
+  namespace: calico-system
+spec:
+  tier: allow-tigera
+  selector: k8s-app == 'calico-node'
+  types:
+  - Ingress
+  ingress:
+  - action: Allow
+    protocol: TCP
+    source:
+      selector: app == 'prometheus' && prometheus == 'calico-node-prometheus'
+    destination:
+      ports:
+      - 9091
+EOF
+```
+
+Or simply run the below command:
+
+```
+kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/EuroAKSWorkshopCC/main/wireguard-metrics.yaml
+```
+
+<img width="907" alt="Screenshot 2022-01-26 at 10 52 42" src="https://user-images.githubusercontent.com/82048393/151152259-49252c42-12be-4672-83df-56da84289883.png">
+
+
+#### Disable WireGuard statistics:
+
+To disable WireGuard on all nodes modify the default Felix configuration:
+
+```
+kubectl patch felixconfiguration default --type='merge' -p '{"spec":{"wireguardEnabled":false}}'
+```
+
+<img width="962" alt="Screenshot 2022-01-26 at 11 10 28" src="https://user-images.githubusercontent.com/82048393/151153157-71118a04-3e6a-4964-89a6-621160bc4ea3.png">
+
+<img width="1228" alt="Screenshot 2022-01-26 at 11 11 17" src="https://user-images.githubusercontent.com/82048393/151153178-b4f5751b-c03a-4f48-965e-b710ea5e48a4.png">
+
+
+
+<br/>
+<br/>
 
 #### Confirming Wireguard encryption is enabled on our nodes
 Enable WireGuard encryption across all the nodes using the following command:
@@ -677,6 +799,10 @@ sudo wg show
 ```
 
 According to PCI controls ```1.3, 1.3.1, 1.3.2, 1.3.3, 1.3.4, 1.3.5, 1.3.7```, we also need to prohibit and/or manage access between internet and CDE. We can protect against forged source IP addresses with WireGuard.
+
+
+<br/>
+<br/>
 
 ## Host-Based Network Policy
 
