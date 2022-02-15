@@ -177,7 +177,7 @@ spec:
 ```
 
 ```
-kubectl apply -f https://raw.githubusercontent.com/tigera-solutions/tigera-eks-workshop/main/demo/50-alerts/unsanctioned.dns.access.yaml
+kubectl apply -f 
 ```
 
 ```
@@ -221,7 +221,7 @@ spec:
 ```
 
 ```
-kubectl apply -f https://raw.githubusercontent.com/tigera-solutions/tigera-eks-workshop/main/demo/50-alerts/unsanctioned.lateral.access.yaml
+kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/lateral-alert.yaml
 ```
 
 # Create a Default-Deny
