@@ -27,7 +27,9 @@ There are several types of reports that you can configure:
 * Network access
 * Policy audit
 
-According to PCI control no. ```2.2 and 2.4```, we need to audit an Inventory of the systems and make sure they meet industry-accepted system-hardening standards. Calico provides a CIS benchmark report that evaluates your Kubernetes worker nodes against CIS (Center for Information Security) configuration hardening standards:
+According to PCI control no. ```2.2 and 2.4```, we need to audit an Inventory of the systems and make sure they meet industry-accepted system-hardening standards. Calico provides a CIS benchmark report that evaluates your Kubernetes worker nodes against CIS (Center for Information Security) configuration hardening standards. <br/>
+<br/>
+This example runs the report at ```18:11 - (6:11 PM)``` every Monday.
 
 ```
 apiVersion: projectcalico.org/v3
@@ -38,7 +40,7 @@ metadata:
     deployment: production
 spec:
   reportType: cis-benchmark
-  schedule: 0 0 * * *
+  schedule: 11 18 * * 1
   cis:
     highThreshold: 100
     medThreshold: 50
