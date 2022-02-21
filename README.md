@@ -51,6 +51,13 @@ spec:
 ```
 kubectl apply -f https://raw.githubusercontent.com/n1g3ld0uglas/kubernetes-compliance-best-practices/main/reports/cis.yaml
 ```
+<br/>
+1. Run once a year at midnight of 1 January - ```0 0 1 1 *```
+2. Run once a month at midnight of the first day of the month - ```0 0 1 * *```
+3. Run once a week at midnight on Sunday morning - ```0 0 * * 0```
+4. Run once a day at midnight -	```0 0 * * *```
+5. Run once an hour at the beginning of the hour -	```0 * * * *```
+<br/>
 
 When using EKS cluster, you need to [enable and configure audit log collection](https://docs.tigera.io/compliance/compliance-reports/compliance-managed-cloud#enable-audit-logs-in-eks) on AWS side in order to get the data captured for the ````policy-audit```` reports.
 
